@@ -30,14 +30,20 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
-      - name: 'Run Playwright tests (Matrix: ${{ matrix.spec }})'
+      - name: Sanitize spec name for artifact and folder
+        id: sanitize
+        run: |
+          SAFE_NAME=$(echo "${{ matrix.spec }}" | sed 's/[\/\.]/-/g')
+          echo "safe_name=$SAFE_NAME" >> $GITHUB_OUTPUT
+
+      - name: Run Playwright test for ${{ matrix.spec }}
         run: |
           npx playwright test ${{ matrix.spec }} --reporter=html
-          mkdir -p html-report-${{ matrix.spec }}
-          mv playwright-report html-report-${{ matrix.spec }}
+          mkdir -p html-report-${{ steps.sanitize.outputs.safe_name }}
+          mv playwright-report html-report-${{ steps.sanitize.outputs.safe_name }}
 
-      - name: Upload report artifact
+      - name: Upload HTML report
         uses: actions/upload-artifact@v4
         with:
-          name: report-${{ matrix.spec }}
-          path: html-report-${{ matrix.spec }}
+          name: "report-${{ steps.sanitize.outputs.safe_name }}"
+          path: "html-report-${{ steps.sanitize.outputs.safe_name }}"
