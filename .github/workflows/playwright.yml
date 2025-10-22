@@ -1,0 +1,43 @@
+name: Playwright Parallel Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        spec:
+          - tests/example.spec.ts
+          - tests/example1.spec.ts
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: 'Run Playwright tests (Matrix: ${{ matrix.spec }})'
+        run: |
+          npx playwright test ${{ matrix.spec }} --reporter=html
+          mkdir -p html-report-${{ matrix.spec }}
+          mv playwright-report html-report-${{ matrix.spec }}
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-${{ matrix.spec }}
+          path: html-report-${{ matrix.spec }}
